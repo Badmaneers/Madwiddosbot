@@ -64,4 +64,21 @@ def stop_python_program(script_name):
             continue
     return False
 
+@bot.message_handler(commands=['run'])
+def handle_run(message):
+    try:
+        # Command to be executed
+        command = "python start.py {udp} '{domain}' {thread} {time}"
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, error = process.communicate()
+
+        if process.returncode == 0:
+            bot.reply_to(message, "Running")
+        else:
+            bot.reply_to(message, f"Error executing command:\n{error.decode('utf-8')}")
+
+    except Exception as e:
+        bot.reply_to(message, f"Error: {str(e)}")
+        
+
 bot.polling()
