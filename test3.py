@@ -23,7 +23,7 @@ def process_domain(message):
         time = '120'
 
         # Command to be executed
-        command = f"python start.py {udp} '{domain}' {thread} {time}"
+        command = f"python start.py {udp} {domain} {thread} {time}"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = process.communicate()
 
